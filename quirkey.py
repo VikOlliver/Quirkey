@@ -1,14 +1,38 @@
-# quirkeyV01.py
+# quirkey.py
 # Microwriter reboot on Arduino for the Quirkey Keyboard (c)2023 vik@diamondage.co.nz
-# Released under the GPLv3 licence http://www.gnu.org/licenses/gpl-3.0.en.html
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+#
+#
 # Uses key tables loosely borrowed from the Microwriter https://en.wikipedia.org/wiki/Microwriter
-# Designed to run on CircuitPython. An Arduino version for the AT32U4 is available on github
+# Designed to run on CircuitPython. An Arduino version of AT32U4 "Microwriter" is available on github
 # HID Example code: https://learn.adafruit.com/adafruit-pyruler/circuitpython-hid-keyboard-and-mouse
 # API https://docs.circuitpython.org/projects/hid/en/latest/api.html
 #
 # Changelog:
 # V01
 # Uses keycodes flag bits to indicate whether a character needs a SHIFT/Alt etc
+# Added AltGr shift
+# Added proper GPL header
+# Support for sending a Windows or Linux UTF character code if UTF_TOKEN bit set
+
+# Which system are we using?
+# Valid types are 'linux', 'windows', and 'mac'.
+# Sorry Mac people, Apple are not UTF freindly
+systemType='linux'
+
 import time
 import board
 import digitalio
@@ -20,8 +44,10 @@ from adafruit_hid.keycode import Keycode
 # Constants
 NUM_KEYS=6
 MOUSE_DELAY_MAX=30
+# If this flag is set, the character is sent as a UTF sequence
+UTF_TOKEN=4096
 # If this flag is set, the character must be shifted
-SHIFT_TOKEN=512
+SHIFT_TOKEN=8192
 # Our own key token constants for our key table
 KEYS_TOKEN=1024
 KEYS_SHIFT_ON=KEYS_TOKEN+0
@@ -46,14 +72,14 @@ alphaTable=[Keycode.SPACE,Keycode.E,Keycode.I,Keycode.O,Keycode.C,Keycode.A,Keyc
 						Keycode.X,Keycode.M,Keycode.P]
 
 # Characters avaiable when internal numeric shift (Ctrl-N) is down
-#             SPACE 120(
+							# SPACE 120(
 numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,Keycode.NINE+SHIFT_TOKEN,
                 # *3$/
                 Keycode.EIGHT+SHIFT_TOKEN,Keycode.THREE,Keycode.FOUR+SHIFT_TOKEN,Keycode.FORWARD_SLASH,
-                # +;/
-                Keycode.EQUALS+SHIFT_TOKEN,Keycode.SEMICOLON,Keycode.FORWARD_SLASH,
-                # @?.
-                Keycode.TWO+SHIFT_TOKEN,Keycode.FORWARD_SLASH+SHIFT_TOKEN,Keycode.PERIOD,
+                # +;
+                Keycode.EQUALS+SHIFT_TOKEN,Keycode.SEMICOLON,
+                # "?.
+                Keycode.QUOTE+SHIFT_TOKEN,Keycode.FORWARD_SLASH+SHIFT_TOKEN,Keycode.PERIOD,
                 # 46-&
                 Keycode.FOUR,Keycode.SIX,Keycode.MINUS,Keycode.SEVEN+SHIFT_TOKEN,
                 # #)%
@@ -66,10 +92,10 @@ numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,Keycode.NINE+SH
                 Keycode.NINE,Keycode.FIVE]
 
 # Key codes used when Extra shift (Ctrl-H) is down
-extraTable=[0, Keycode.ESCAPE, 0, 0, 0, '[', Keycode.DELETE, 0,
+extraTable=[0, Keycode.ESCAPE, 0, 0, 0, Keycode.LEFT_BRACKET, Keycode.DELETE, 0,
            # k
-           Keycode.HOME, 0 ,'_', 0, 0, 0, Keycode.END, 0,
-           0, '\\', 0, ']', Keycode.PAGE_DOWN, 0, 0, 0,
+           Keycode.HOME, 0 ,0 , 0, 0, 0, Keycode.END, 0,
+           0, Keycode.FORWARD_SLASH, 0, Keycode.RIGHT_BRACKET, Keycode.PAGE_DOWN, 0, 0, 0,
            Keycode.PAGE_UP, 0, 0, 0, 0, 0, 0]
 
 # Keycodes used when Function shift (Ctrl-V) is down
@@ -84,6 +110,16 @@ shiftTable=[KEYS_SHIFT_ON, KEYS_SHIFT_OFF, Keycode.INSERT, KEYS_MOUSE_MODE_ON, K
           KEYS_EXTRA_SHIFT, KEYS_ALTGR_SHIFT, KEYS_FUNC_SHIFT, 0, Keycode.DOWN_ARROW, 0, 0, 0,
           Keycode.UP_ARROW, 0, 0, 0, KEYS_CONTROL_SHIFT, 0, KEYS_ALT_SHIFT, 0]
 
+# Hexadecimal key tokens used to send UTF codes under Linux
+hexdigits=[Keycode.ZERO,Keycode.ONE,Keycode.TWO,Keycode.THREE,Keycode.FOUR,Keycode.FIVE,Keycode.SIX,
+				Keycode.SEVEN,Keycode.EIGHT,Keycode.NINE,
+				Keycode.A,Keycode.B,Keycode.C,Keycode.D,Keycode.E,Keycode.F]
+
+# Hexadecimal key tokens used to send UTF codes under Windows
+keypadDigits=[Keycode.KEYPAD_ZERO,Keycode.KEYPAD_ONE,Keycode.KEYPAD_TWO,Keycode.KEYPAD_THREE,
+				Keycode.KEYPAD_FOUR,Keycode.KEYPAD_FIVE,Keycode.KEYPAD_SIX,Keycode.KEYPAD_SEVEN,
+				Keycode.KEYPAD_EIGHT,Keycode.KEYPAD_NINE]
+				
 global keyboard
 global keyboardLayout
 
@@ -119,6 +155,50 @@ def setup():
     button.pull = digitalio.Pull.UP
     keySwitches.append(button)
 
+#################################################################################
+# Takes the 16-bit UTF character code and uses Linux ALT kepress technology
+# to send it to the HID keyboard channel.
+# Linux uses SHIFT+CTRL+U <hexcode> release SHIFT+CTRL
+def sendUtfCharLinux(utfChar):
+    print("Send Linux UTF char",utfChar)
+	# UTF starts with a U, CTRL+SHIFT held down
+    Keyboard.send(Keycode.LEFT_SHIFT,Keycode.LEFT_CONTROL)
+    Keyboard.press(Keycode.U)
+    # Send the three hex digits, high end first
+    Keyboard.send(hexdigit[(utfChar >> 16) & 255],
+    	hexdigit[(uftChar >> 8) & 255],
+    	hexdigit[utfChar & 255])
+
+    # Now signal keys up, and revert to original shift key modifiers.
+    keyboard.release(Keycode.LEFT_CONTROL)
+    keyboard.release(Keycode.LEFT_SHIFT)
+    if (shifted == 2):
+        keyboard.press(Keycode.LEFT_SHIFT)
+    if (controlled == 2):
+        keyboard.press(Keycode.LEFT_CONTROL)
+
+#################################################################################
+# Takes the 16-bit UTF character code and uses Windows ALT kepress technology
+# to send it to the HID keyboard channel.
+# Windows uses ALT NUMERIC_PLUS <decimal value using keypad> release ALT
+def sendUtfCharWindows(utfChar):
+    print("Send Windows UTF char",utfChar)
+
+	# UTF starts with left ALT held down
+    Keyboard.send(Keycode.LEFT_ALT);
+    Keyboard.press(Keycode.NUMERIC_PLUS)
+
+    # Build a list of the keypad digit keys
+    while utfChar > 0:
+        digitKeys.insert(0,keypadDigits[utfChar % 10])
+        utfChar = utfChar / 10
+    # Send 'em to the HID keyboard
+    keyboard.send(digitKeys)
+    # Finally, we can let go the ALT key
+    keyboard.release(Keycode.LEFT_ALT)
+    # Now revert to original ALT key modifier.
+    if (alted == 2):
+        keyboard.press(Keycode.LEFT_ALT)
 
 #################################################################################
 # Return a binary representation of the raw keybits
@@ -158,6 +238,7 @@ def everythingOff():
   numericed = 0
   controlled = 0
   alted = 0
+  altgred = 0
   extraed = 0
   funced = 0
 
@@ -172,11 +253,23 @@ def tokenisedWrite(x):
     # If the key needs a shift, press shift
     if (x & SHIFT_TOKEN) != 0:
         keyboard.press(Keycode.LEFT_SHIFT)
-    keyboard.press(c)
-    keyboard.release(c)
-    # If the key needed shift, but shift wan't already down, release shift.
-    if (x & SHIFT_TOKEN != 0) and (shifted < 2):
-        keyboard.release(Keycode.LEFT_SHIFT)
+        keyboard.press(c)
+        keyboard.release(c)
+    	if (shifted < 2):
+        	keyboard.release(Keycode.LEFT_SHIFT)
+
+    # If the value has a UTF token bit set, send the charcter as a UTF sequence
+    elif (x & UTF_TOKEN) != 0:
+    	if ( systemType == 'linux' ):
+            sendUtfCharLinux(x & 0xfff)
+        elif ( systemType == 'windows' ):
+            sendUtfCharWindows(x & 0xfff)
+	    # Mac users are SOL as Mac keyboards do not support UTF.
+
+    # No special token. Press and release the key.
+    else:
+        keyboard.press(c)
+        keyboard.release(c)
 
 #################################################################################
 # Uses finger keys as LUDR, thumb as click 1 & 2.
@@ -249,21 +342,16 @@ print("Starting Quirkey Main Loop")
 while True:
   x = keyWait()
 
-  print(x)
-
   if x < 32 :
     # Here a chord has been pressed without the control key
     if numericed != 0:
-      print("Numeric ",numericTable[x - 1])
-      tokenisedWrite(numericTable[x - 1])
+        tokenisedWrite(numericTable[x - 1])
     elif extraed != 0:
-      print("Extra ", x)
-      keyboardLayout.write(extraTable[x - 1])
+        tokenisedWrite(extraTable[x - 1])
     elif funced != 0:
-      keyboardLayout.write(funcTable[x - 1])
+        tokenisedWrite(funcTable[x - 1])
     else:
-      print("Alpha: ", alphaTable[x - 1], "Code", x)
-      tokenisedWrite(alphaTable[x - 1])
+        tokenisedWrite(alphaTable[x - 1])
 
     # Having done whatever the chord was supposed to do, we see if any temporary
     # keyboard shifts need to be cleared
@@ -273,7 +361,7 @@ while True:
 
     if controlled == 1: # Clear a single control shift.
       controlled = 0
-      keyboard.release(Keycode.LEFT_CTRL)
+      keyboard.release(Keycode.LEFT_CONTROL)
 
     if alted == 1: # Clear a single alt shift.
       alted = 0
@@ -290,11 +378,9 @@ while True:
 
   else:
     # Must be a shift function then
-    print("Shift function", x-32)
     x = shiftTable[x - 32]
     if x < 256:
       # This was a keycode to press and release
-      print("Press/release", x)
       tokenisedWrite(x)
     else:
       # Its a more complicated keypress requiring a function.
@@ -308,18 +394,18 @@ while True:
           controlled += 1
           if controlled > 2:
             controlled = 2
-          keyboard.press(Keycode.LEFT_CTRL)
+          keyboard.press(Keycode.LEFT_CONTROL)
 
       elif x == KEYS_SHIFT_OFF:
           everythingOff()
 
       elif x == KEYS_NUMERIC_SHIFT:
-          numericed += 1
-          print("Shift on")
-          if numericed > 2:
-            numericed = 2;
+            numericed += 1
+            if numericed > 2:
+                numericed = 2;
 
       elif x == KEYS_EXTRA_SHIFT:
+          extraed += 1
           if extraed > 2:
             extraed = 2;
 
@@ -342,5 +428,3 @@ while True:
 
       elif x == KEYS_MOUSE_MODE_ON:
           mouseMode()
-
-
