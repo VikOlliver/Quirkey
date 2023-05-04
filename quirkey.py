@@ -40,6 +40,7 @@ import usb_hid
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keyboard_layout_us import KeyboardLayoutUS
 from adafruit_hid.keycode import Keycode
+from adafruit_hid.mouse import Mouse
 
 # Constants
 NUM_KEYS=6
@@ -87,7 +88,7 @@ numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,Keycode.NINE+SH
                 # !@7=
                 Keycode.ONE+SHIFT_TOKEN,Keycode.TWO+SHIFT_TOKEN,Keycode.SEVEN,Keycode.EQUALS,
                 # ,:8x
-                Keycode.COMMA,Keycode.SEMICOLON+SHIFT_TOKEN,Keycode.EIGHT,Keycode.X,
+                Keycode.COMMA,Keycode.SEMICOLON+SHIFT_TOKEN,Keycode.EIGHT,Keycode.GRAVE_ACCENT,
                 # 95
                 Keycode.NINE,Keycode.FIVE]
 
@@ -121,6 +122,7 @@ keypadDigits=[Keycode.KEYPAD_ZERO,Keycode.KEYPAD_ONE,Keycode.KEYPAD_TWO,Keycode.
 				Keycode.KEYPAD_EIGHT,Keycode.KEYPAD_NINE]
 				
 global keyboard
+global mouse
 global keyboardLayout
 
 # >0 when shift is on.
@@ -146,8 +148,10 @@ def setup():
   time.sleep(1)  # Sleep for a bit to avoid a race condition on some systems
   global keyboard
   global keyboardLayout
+  global mouse
   keyboard = Keyboard(usb_hid.devices)
   keyboardLayout = KeyboardLayoutUS(keyboard)  # We're in the US :)
+  mouse = Mouse(usb_hid.devices)
 
   for pin in keyPorts:
     button = digitalio.DigitalInOut(pin)
@@ -233,6 +237,13 @@ def keyWait():
 #################################################################################
 # Tell the keyboard to release all keys, and turn off all our internal shifts
 def everythingOff():
+  global shifted
+  global numericed
+  global controlled
+  global alted
+  global altgred
+  global extraed
+  global funced
   keyboard.release_all()
   shifted = 0
   numericed = 0
@@ -281,7 +292,6 @@ def mouseMode():
   y=0
   mouseDelay = MOUSE_DELAY_MAX
 
-  Mouse.begin();
   while True:
     k = keyBits()
     if k == 30:
@@ -307,20 +317,20 @@ def mouseMode():
 
     # Mouse clicks
     if (k & 1) != 0:
-      Mouse.press(MOUSE_LEFT)
+      mouse.press(Mouse.LEFT_BUTTON)
       time.sleep(0.05)
       while (keyBits() & 1) != 0:
-        Mouse.release(MOUSE_LEFT)
+        mouse.release(Mouse.LEFT_BUTTON)
 
     if (k & 32) != 0:
-      Mouse.press(MOUSE_RIGHT)
+      mouse.press(Mouse.RIGHT_BUTTON)
       time.sleep(0.050)
       while (keyBits() & 32) != 0:
-         Mouse.release(MOUSE_RIGHT)
+         mouse.release(Mouse.RIGHT_BUTTON)
 
     # If keys moved, move mouse.
     if (x != 0) or (y != 0):
-      Mouse.move(x, y, 0)
+      mouse.move(x, y, 0)
       time.sleep(mouseDelay/1000)
       mouseDelay -= 1
       x = y = 0
@@ -329,7 +339,6 @@ def mouseMode():
     if mouseDelay < 4:
       mouseDelay = 4
 
-  Mouse.end()
   # Wait for all keys up
   while keyBits() != 0:
     time.sleep(0.001)
@@ -397,7 +406,9 @@ while True:
           keyboard.press(Keycode.LEFT_CONTROL)
 
       elif x == KEYS_SHIFT_OFF:
+          print("everything off")
           everythingOff()
+          print("numericed",numericed)
 
       elif x == KEYS_NUMERIC_SHIFT:
             numericed += 1
@@ -428,3 +439,4 @@ while True:
 
       elif x == KEYS_MOUSE_MODE_ON:
           mouseMode()
+
