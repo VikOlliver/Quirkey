@@ -27,6 +27,7 @@
 # Added AltGr shift
 # Added proper GPL header
 # Support for sending a Windows or Linux UTF character code if UTF_TOKEN bit set
+# Improved mouse acceleration algorithm
 
 # Which system are we using?
 # Valid types are 'linux', 'windows', and 'mac'.
@@ -43,8 +44,12 @@ from adafruit_hid.keycode import Keycode
 from adafruit_hid.mouse import Mouse
 
 # Constants
+###########
 NUM_KEYS=6
-MOUSE_DELAY_MAX=30
+# After moving this number of ticks, the mouse will accelerate
+MOUSE_ACCELERATION_POINT = 40
+# Maximum speedup on mouse
+MOUSE_MAX_ACCELERATION = 7
 # If this flag is set, the character is sent as a UTF sequence
 UTF_TOKEN=4096
 # If this flag is set, the character must be shifted
@@ -290,30 +295,40 @@ def mouseMode():
   k = 0
   x= 0
   y=0
-  mouseDelay = MOUSE_DELAY_MAX
+  # How far the mouse has moved without a break
+  mouseTicks = 0
 
   while True:
+    # Determine if the mouse is accelerating or not. If it is, bump up movement factor
+    if mouseTicks > MOUSE_ACCELERATION_POINT:
+        mouseMove = int(mouseTicks/MOUSE_ACCELERATION_POINT)
+        if mouseMove > MOUSE_MAX_ACCELERATION:
+            mouseMove = MOUSE_MAX_ACCELERATION
+    else:
+        mouseMove = 1
+
     k = keyBits()
     if k == 30:
       break # Quit mousing if all 4 move keys hit.
     if k == 0:
-      mouseDelay = MOUSE_DELAY_MAX
+        # Mouse stopped moving.
+        mouseTicks = 0
 
     if (k & 2) != 0:
       # Mouse left
-      x = -1
+      x = -mouseMove
 
     if (k & 16) != 0:
       # Mouse right
-      x = 1
+      x = mouseMove
 
     if (k & 4) != 0:
       # Mouse up
-      y = -1
+      y = -mouseMove
 
     if (k & 8) != 0:
       # Mouse down
-      y = 1;
+      y = mouseMove;
 
     # Mouse clicks
     if (k & 1) != 0:
@@ -331,13 +346,10 @@ def mouseMode():
     # If keys moved, move mouse.
     if (x != 0) or (y != 0):
       mouse.move(x, y, 0)
-      time.sleep(mouseDelay/1000)
-      mouseDelay -= 1
+      time.sleep(0.01)
+      mouseTicks += 1
       x = y = 0
 
-    # If acceleration is at maximum, do not exceed it!
-    if mouseDelay < 4:
-      mouseDelay = 4
 
   # Wait for all keys up
   while keyBits() != 0:
@@ -439,4 +451,3 @@ while True:
 
       elif x == KEYS_MOUSE_MODE_ON:
           mouseMode()
-
