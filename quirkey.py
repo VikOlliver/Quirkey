@@ -28,6 +28,7 @@
 # Added proper GPL header
 # Support for sending a Windows or Linux UTF character code if UTF_TOKEN bit set
 # Improved mouse acceleration algorithm
+# Now has repeating keys
 
 # Which system are we using?
 # Valid types are 'linux', 'windows', and 'mac'.
@@ -46,6 +47,10 @@ from adafruit_hid.mouse import Mouse
 # Constants
 ###########
 NUM_KEYS=6
+# Delay in 10ms increments before repeat starts
+REPEAT_START_DELAY = 220
+# Delay in 10ms increments between repeated characters
+REPEAT_INTERVAL_DELAY = 8
 # After moving this number of ticks, the mouse will accelerate
 MOUSE_ACCELERATION_POINT = 40
 # Maximum speedup on mouse
@@ -129,6 +134,9 @@ keypadDigits=[Keycode.KEYPAD_ZERO,Keycode.KEYPAD_ONE,Keycode.KEYPAD_TWO,Keycode.
 global keyboard
 global mouse
 global keyboardLayout
+
+# The chord we are repeating
+repeatingChord = 0
 
 # >0 when shift is on.
 shifted=0
@@ -221,6 +229,77 @@ def keyBits():
       k += 1
 
   return k
+
+#################################################################################
+# If the repeating chord is still held down, return it after a brief delay.
+# Otherwise, wait until all keys are released and return zero.
+def getRepeatingChord():
+  k = 0
+  global repeatingChord
+
+  while True:
+    # Debounce
+    while k != keyBits():
+      time.sleep(0.01)  # 10ms delay
+      k = keyBits()
+
+    # If the chord matches the repeat, delay a bit and return the chord
+    if k == repeatingChord:
+      time.sleep(0.01*REPEAT_INTERVAL_DELAY)
+      return k
+
+    # Whatever the chord changed to, we wait for it to go away
+    while keyBits() != 0:
+      time.sleep(0.01)
+    repeatingChord = 0
+    return 0
+
+
+#################################################################################
+# Wait (with debounce) until some keys have been pressed.
+# If all keys are released with in repeat time, return the chord.
+# If held beyone repeat time, enter repeat mode and return it.
+def keyWaitRepeat():
+  x = 0
+  k = 0
+  timer = 0
+  global repeatingChord
+
+  # If we're repeating, get repeated chord after delay etc.
+  if repeatingChord != 0:
+    x = getRepeatingChord()
+    if x != 0:
+      return x
+      #If we drop out here, the repeat has ended. get another chord.
+
+  while True:
+    # Debounce
+    while k != keyBits():
+      time.sleep(0.01)  # 10ms delay
+      k = keyBits()
+    # We drop out with stable input
+
+    if x != k:
+      # the chord changed, so reset the repeat timer
+      timer = 0
+
+    # Accumulate keypresses into chord
+    x = x | k
+    
+    # If all keys are released, return the accumulated chord.
+    if x != 0 and k == 0:
+      return x
+    # Otherwise, do a bit of the repeat wait timer.
+    time.sleep(0.01)
+    # If keys are still down and we have exceeded repeat time, enter
+    # repeat mode and return the chord.
+    if k != 0:
+      timer += 1
+    if timer > REPEAT_START_DELAY:
+      repeatingChord = x
+      break
+
+  return x
 
 #################################################################################
 # Wait (with debounce) until some keys have been pressed, and all keys are released.
@@ -361,7 +440,7 @@ setup()
 print("Starting Quirkey Main Loop")
 
 while True:
-  x = keyWait()
+  x = keyWaitRepeat()
 
   if x < 32 :
     # Here a chord has been pressed without the control key
@@ -418,9 +497,7 @@ while True:
           keyboard.press(Keycode.LEFT_CONTROL)
 
       elif x == KEYS_SHIFT_OFF:
-          print("everything off")
           everythingOff()
-          print("numericed",numericed)
 
       elif x == KEYS_NUMERIC_SHIFT:
             numericed += 1
