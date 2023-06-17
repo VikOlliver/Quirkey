@@ -32,8 +32,9 @@
 
 # Which system are we using?
 # Valid types are 'linux', 'windows', and 'mac'.
-# Sorry Mac people, Apple are not UTF freindly
-systemType='linux'
+# Need to update Windows to use hex digit entry, ana
+# support similar system for Mac.
+systemType='windows'
 
 import time
 import board
@@ -70,6 +71,7 @@ KEYS_EXTRA_SHIFT=KEYS_TOKEN+5
 KEYS_MOUSE_MODE_ON=KEYS_TOKEN+6
 KEYS_FUNC_SHIFT=KEYS_TOKEN+7
 KEYS_ALTGR_SHIFT=KEYS_TOKEN+8
+KEYS_LANGAUGE_SHIFT=KEYS_TOKEN+9  # Currently Pinyin accenting
 
 # Ctrl, pinkie, ring, middle, 1st, thumb pins.
 # Activating a switch grounds the respective pin.
@@ -106,7 +108,7 @@ numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,Keycode.NINE+SH
 extraTable=[0, Keycode.ESCAPE, 0, 0, 0, Keycode.LEFT_BRACKET, Keycode.DELETE, 0,
            # k
            Keycode.HOME, 0 ,0 , 0, 0, 0, Keycode.END, 0,
-           0, Keycode.FORWARD_SLASH, 0, Keycode.RIGHT_BRACKET, Keycode.PAGE_DOWN, 0, 0, 0,
+           0, Keycode.FORWARD_SLASH, Keycode.RIGHT_BRACKET, 0, Keycode.PAGE_DOWN, 0, 0, 0,
            Keycode.PAGE_UP, 0, 0, 0, 0, 0, 0]
 
 # Keycodes used when Function shift (Ctrl-V) is down
@@ -118,8 +120,50 @@ funcTable=[0, Keycode.F1, Keycode.F2, Keycode.F10, 0, Keycode.F11, Keycode.F3, 0
 # Key shift internal tokens and some editing keycodes used when shift is down
 shiftTable=[KEYS_SHIFT_ON, KEYS_SHIFT_OFF, Keycode.INSERT, KEYS_MOUSE_MODE_ON, Keycode.RETURN, 0, Keycode.BACKSPACE, 0,
           Keycode.LEFT_ARROW, 0, Keycode.TAB, 0, KEYS_NUMERIC_SHIFT, 0, Keycode.RIGHT_ARROW, 0,
-          KEYS_EXTRA_SHIFT, KEYS_ALTGR_SHIFT, KEYS_FUNC_SHIFT, 0, Keycode.DOWN_ARROW, 0, 0, 0,
+          KEYS_EXTRA_SHIFT, KEYS_ALTGR_SHIFT, KEYS_FUNC_SHIFT, 0, Keycode.DOWN_ARROW, 0, KEYS_LANGAUGE_SHIFT, 0,
           Keycode.UP_ARROW, 0, 0, 0, KEYS_CONTROL_SHIFT, 0, KEYS_ALT_SHIFT, 0]
+
+# Accents and pinyin stuff
+
+'''
+tones 0-4:
+
+a	ā	&#x101;	á	&#xE1;	ǎ	&#x1CE;	à	&#xE0;
+e	ē	&#x113;	é	&#xE9;	ě	&#x11B;	è	&#xE8;
+i	ī	&#x12B;	í	&#xED;	ǐ	&#x1D0;	ì	&#xEC;
+o	ō	&#x14D;	ó	&#xF3;	ǒ	&#x1D2;	ò	&#xF2;
+u	ū	&#x16B;	ú	&#xFA;	ǔ	&#x1D4;	ù	&#xF9;
+ü	ǖ	&#x1D6;	ǘ	&#x1D8;	ǚ	&#x1DA;	ǜ	&#x1DC;
+A	Ā	&#x100;	Á	&#xC1;	Ǎ	&#x1Cd;	À	&#xC0;
+E	Ē	&#x112;	É	&#xC9;	Ě	&#x11A;	È	&#xC8;
+I	Ī	&#x12A;	Í	&#xCD;	Ǐ	&#x1CF;	Ì	&#xCC;
+O	Ō	&#x14C;	Ó	&#xD3;	Ǒ	&#x1D1;	Ò	&#xD2;
+U	Ū	&#x16A;	Ú	&#xDA;	Ǔ	&#x1D3;	Ù	&#xD9;
+Ü	Ǖ	&#x1D5;	Ǘ	&#x1D7;	Ǚ	&#x1D9;	Ǜ	&#x1DB;
+'''
+# Characters that pinyin recognised as vowels that can have accents
+vowels=[Keycode.A,Keycode.E,Keycode.I,Keycode.O,Keycode.U]
+# Key bit chords that pinyin uses to apply accents as tones 1-4 (space indicates no accent)
+acntKeys=[2,4,8,16];
+
+
+# The UFT characters of accented vowels when acntKeys are applied to them
+utfArray=[
+    0x101,0x0E1,0x1CE,0x0E0,    # a
+    0x113,0x0E9,0x11B,0x0E8,    # e
+    0x12B,0x0ED,0x1D0,0x0EC,    # i
+    0x14D,0x0F3,0x1D2,0x0F2,    # o
+    0x16B,0x0FA,0x1D4,0x0F9,    # u
+    0x1D6,0x1D8,0x1DA,0x1DC,    # ü
+
+    0x100,0x0C1,0x1Cd,0x0C0,    # A
+    0x112,0x0C9,0x11A,0x0C8,    # E
+    0x12A,0x0CD,0x1CF,0x0CC,    # I
+    0x14C,0x0D3,0x1D1,0x0D2,    # O
+    0x16A,0x0DA,0x1D3,0x0D9,     # U
+    0x1D5,0x1D7,0x1D9,0x1DB     # Ü
+]
+
 
 # Hexadecimal key tokens used to send UTF codes under Linux
 hexdigits=[Keycode.ZERO,Keycode.ONE,Keycode.TWO,Keycode.THREE,Keycode.FOUR,Keycode.FIVE,Keycode.SIX,
@@ -139,19 +183,23 @@ global keyboardLayout
 repeatingChord = 0
 
 # >0 when shift is on.
-shifted=0
+shifted=0 # has a real keyboard key counterpoart
 # >0 when using numeric table
 numericed=0
-# >0 when CTRL is on
+# >0 when CTRL is on - has a real keyboard key counterpoart
 controlled=0
-# >0 when ALT is on
+# >0 when ALT is on - has a real keyboard key counterpoart
 alted=0
-# >0 when ALTGR is on
+# >0 when ALTGR is on - has a real keyboard key counterpoart
 altgred=0
 # >0 When extra shift on
 extraed=0
 # >0 when using function key table
 funced=0
+# >0 when using anguage-specific accents
+# 2 When pinyin mode is locked in.
+accented=0
+
 #################################################################################
 #################################################################################
 
@@ -177,14 +225,17 @@ def setup():
 # to send it to the HID keyboard channel.
 # Linux uses SHIFT+CTRL+U <hexcode> release SHIFT+CTRL
 def sendUtfCharLinux(utfChar):
-    print("Send Linux UTF char",utfChar)
 	# UTF starts with a U, CTRL+SHIFT held down
-    Keyboard.send(Keycode.LEFT_SHIFT,Keycode.LEFT_CONTROL)
-    Keyboard.press(Keycode.U)
+    keyboard.press(Keycode.LEFT_SHIFT,Keycode.LEFT_CONTROL)
+    keyboard.press(Keycode.U)
+    keyboard.release(Keycode.U)
     # Send the three hex digits, high end first
-    Keyboard.send(hexdigit[(utfChar >> 16) & 255],
-    	hexdigit[(uftChar >> 8) & 255],
-    	hexdigit[utfChar & 255])
+    keyboard.press(hexdigits[(utfChar >> 8) & 15])
+    keyboard.release(hexdigits[(utfChar >> 8) & 15])
+    keyboard.press(hexdigits[(utfChar >> 4) & 15])
+    keyboard.release(hexdigits[(utfChar >> 4) & 15])
+    keyboard.press(hexdigits[utfChar & 15])
+    keyboard.release(hexdigits[utfChar & 15])
 
     # Now signal keys up, and revert to original shift key modifiers.
     keyboard.release(Keycode.LEFT_CONTROL)
@@ -202,20 +253,34 @@ def sendUtfCharWindows(utfChar):
     print("Send Windows UTF char",utfChar)
 
 	# UTF starts with left ALT held down
-    Keyboard.send(Keycode.LEFT_ALT);
-    Keyboard.press(Keycode.NUMERIC_PLUS)
+    keyboard.press(Keycode.LEFT_ALT)
+    keyboard.press(Keycode.KEYPAD_PLUS)
+    keyboard.release(Keycode.KEYPAD_PLUS)
 
     # Build a list of the keypad digit keys
+    digitKeys = []
     while utfChar > 0:
-        digitKeys.insert(0,keypadDigits[utfChar % 10])
-        utfChar = utfChar / 10
-    # Send 'em to the HID keyboard
-    keyboard.send(digitKeys)
+        digitKeys.insert(0,keypadDigits[int(utfChar % 10)])
+        utfChar = int(utfChar / 10)
+    # Send 'em to the HID keyboard one at a time
+    for k in digitKeys:
+      keyboard.press(k)
+      keyboard.release(k)
+ 
     # Finally, we can let go the ALT key
     keyboard.release(Keycode.LEFT_ALT)
     # Now revert to original ALT key modifier.
     if (alted == 2):
         keyboard.press(Keycode.LEFT_ALT)
+
+#################################################################################
+# Send the given UTF character using the right system sequence.
+def sendUtfChar(c):
+  if systemType == "linux":
+    sendUtfCharLinux(c)
+  else:
+    sendUtfCharWindows(c)
+
 
 #################################################################################
 # Return a binary representation of the raw keybits
@@ -285,7 +350,7 @@ def keyWaitRepeat():
 
     # Accumulate keypresses into chord
     x = x | k
-    
+
     # If all keys are released, return the accumulated chord.
     if x != 0 and k == 0:
       return x
@@ -328,6 +393,7 @@ def everythingOff():
   global altgred
   global extraed
   global funced
+  global accented
   keyboard.release_all()
   shifted = 0
   numericed = 0
@@ -336,6 +402,7 @@ def everythingOff():
   altgred = 0
   extraed = 0
   funced = 0
+  accented = 0
 
 #################################################################################
 # Check the character X to see if it has any modifier key flags. If necessary
@@ -435,6 +502,39 @@ def mouseMode():
     time.sleep(0.001)
 
 #################################################################################
+# accentedWrite takes the key value and attempts to put a pinyin accent on it.
+# This is output as a UTF character using the host PC UTF entry system.
+#################################################################################
+def accentedWrite(x):
+  if not x in vowels:
+    # Not a vowel key. Just send the keystroke.
+    tokenisedWrite(x)
+    return
+
+  # Key needs an accent.Fetch a potential accent pattern
+  p = keyWait()
+  # if no matching accent character is available, return unaccented char.
+  if not p in acntKeys:
+    tokenisedWrite(x)
+    return
+
+  a = acntKeys.index(p)
+
+
+  print("p=",p, "a=",a)
+  # We have the key code for characer x and accent a upon it.
+  # There are 4 accents per char in pinyin.
+  # Index the UTF code and send it.
+  # First check for shift, which capitalises the accented char and moves up the table
+  vidx = vowels.index(x)
+  if shifted > 0:
+    vidx += 24
+
+  print("vidx=",vidx)
+  # Calculate the position of the accented character
+  sendUtfChar(utfArray[a+4*vidx])
+  return
+
 print("QuirkeyV01 setup ...")
 setup()
 print("Starting Quirkey Main Loop")
@@ -443,7 +543,7 @@ while True:
   x = keyWaitRepeat()
 
   if x < 32 :
-    # Here a chord has been pressed without the control key
+    # Here a chord has been pressed without the command key
     if numericed != 0:
         tokenisedWrite(numericTable[x - 1])
     elif extraed != 0:
@@ -451,7 +551,10 @@ while True:
     elif funced != 0:
         tokenisedWrite(funcTable[x - 1])
     else:
-        tokenisedWrite(alphaTable[x - 1])
+        if accented > 0:
+          accentedWrite(alphaTable[x - 1])
+        else:
+          tokenisedWrite(alphaTable[x-1])
 
     # Having done whatever the chord was supposed to do, we see if any temporary
     # keyboard shifts need to be cleared
@@ -471,10 +574,14 @@ while True:
       altgred = 0
       keyboard.release(Keycode.RIGHT_ALT)
 
+    if accented == 1: # Clear a single alt shift.
+      accented = 0
+
     # Clear any internal temporary numeric, extra and func shifts
     numericed &= 2
     extraed &= 2
     funced &= 2
+    accented &= 2
 
   else:
     # Must be a shift function then
@@ -525,6 +632,11 @@ while True:
           funced += 1
           if funced > 2:
             funced = 2
+
+      elif x == KEYS_LANGAUGE_SHIFT:
+        accented += 1
+        if accented > 2:
+          accented = 2
 
       elif x == KEYS_MOUSE_MODE_ON:
           mouseMode()
