@@ -2,6 +2,10 @@
 
 CircuitPython code for the Pi Pico version of the Quirkey keyboard, based heavily on the work done by Microwriter. The device emulates a USB HID US keyboard and requires no specific driver. It does however need the Adafruit HID CircuitPython libraries which can be downloaded from Adafruit's HID example web page or from Github. Once you have installed this on your Pi Pico, just copy the quirkey.py program into the CIRCUITPY device and rename it to code.py - if you have not done this before, it is the standard installation procedure that you will find in the CircuitPython tutorial pages.
 
+## Documentation
+
+There is now a version of The Beginner's Guide. Not exactly completed, but it'll get you up and running. Source document will be provided when I don't feel embarrassed about it, but for now it is in PDF format.
+
 ## Typing Tutor
 
 A simple "typing tutor" application is included in TutorApp. Just copy these files into a directory and run TutorApp.py according to the Python operating instructions of your platform (a copy of John Zelle's simple portable graphics utility is included for convenience, should you not have it already installed).
