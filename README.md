@@ -4,7 +4,9 @@ CircuitPython code for the Pi Pico version of the Quirkey keyboard, based heavil
 
 ## Documentation
 
-There is now a version of The Beginner's Guide. Not exactly completed, but it'll get you up and running. Source document will be provided when I don't feel embarrassed about it, but for now it is in PDF format.
+There is now a version of The Beginner's Guide in the Documentation folder. Not exactly completed, but it'll get you up and running. Source document will be provided when I don't feel embarrassed about it, but for now it is in PDF format.
+
+Assembly and programming details are there, together with 'Cheat Sheets" for the keystrokes in mnemonic form. There is also a list of currently supported characters and key functions.
 
 ## Typing Tutor
 
