@@ -29,6 +29,8 @@
 # Support for sending a Windows or Linux UTF character code if UTF_TOKEN bit set
 # Improved mouse acceleration algorithm
 # Now has repeating keys
+# Added a heartbeat indicator LED driver, mostly for debugging
+# Wrapped the main code in a 'try' and reboot if, say, the USB goes wrong.
 
 # Which system are we using?
 # Valid types are 'linux', 'windows', and 'mac'.
@@ -39,6 +41,8 @@ systemType='windows'
 import time
 import board
 import digitalio
+import microcontroller
+import traceback
 import usb_hid
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keyboard_layout_us import KeyboardLayoutUS
@@ -73,6 +77,10 @@ KEYS_FUNC_SHIFT=KEYS_TOKEN+7
 KEYS_ALTGR_SHIFT=KEYS_TOKEN+8
 KEYS_LANGAUGE_SHIFT=KEYS_TOKEN+9  # Currently Pinyin accenting
 
+# Variables used to produce a heartbeat LED. If you don't want one, define HEARTBEAT_PIN as 0
+HEARTBEAT_PIN=board.GP17
+heartbeat_count=0
+
 # Ctrl, pinkie, ring, middle, 1st, thumb pins.
 # Activating a switch grounds the respective pin.
 keyPorts=[board.GP8,board.GP7,board.GP6,board.GP5,board.GP4,board.GP9]
@@ -105,10 +113,10 @@ numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,Keycode.NINE+SH
                 Keycode.NINE,Keycode.FIVE]
 
 # Key codes used when Extra shift (Ctrl-H) is down
-extraTable=[0, Keycode.ESCAPE, 0, 0, 0, Keycode.LEFT_BRACKET, Keycode.DELETE, 0,
+extraTable=[0, Keycode.ESCAPE, 0, 0, Keycode.LEFT_BRACKET, 0, Keycode.DELETE, 0,
            # k
-           Keycode.HOME, 0 ,0 , 0, 0, 0, Keycode.END, 0,
-           0, Keycode.FORWARD_SLASH, Keycode.RIGHT_BRACKET, 0, Keycode.PAGE_DOWN, 0, 0, 0,
+           Keycode.HOME, 0 ,0, Keycode.BACKSLASH, 0, 0, Keycode.END, 0,
+           0, 0, 0, Keycode.RIGHT_BRACKET, Keycode.PAGE_DOWN, 0, 0, 0,
            Keycode.PAGE_UP, 0, 0, 0, 0, 0, 0]
 
 # Keycodes used when Function shift (Ctrl-V) is down
@@ -210,15 +218,37 @@ def setup():
   global keyboard
   global keyboardLayout
   global mouse
+  global heartbeat_output
+  
   keyboard = Keyboard(usb_hid.devices)
   keyboardLayout = KeyboardLayoutUS(keyboard)  # We're in the US :)
   mouse = Mouse(usb_hid.devices)
 
+  # Enable all the key button inputs
   for pin in keyPorts:
     button = digitalio.DigitalInOut(pin)
     button.direction = digitalio.Direction.INPUT
     button.pull = digitalio.Pull.UP
     keySwitches.append(button)
+
+  # If we're using a hearbeat LED, enable that output
+  if HEARTBEAT_PIN != 0:
+    print("Starting heartbeat LED")
+    heartbeat_output = digitalio.DigitalInOut(HEARTBEAT_PIN)
+    heartbeat_output.direction = digitalio.Direction.OUTPUT
+    heartbeat_output.value = True
+    
+#################################################################################
+# Flash the heartbeat pin periodically
+def blink_heartbeat():
+  global heartbeat_count
+  heartbeat_count = heartbeat_count + 1
+  if heartbeat_count < 300:
+    heartbeat_output.value=False
+  else:
+    heartbeat_output.value=True
+    if heartbeat_count > 320:
+      heartbeat_count = 0
 
 #################################################################################
 # Takes the 16-bit UTF character code and uses Linux ALT kepress technology
@@ -288,6 +318,9 @@ def keyBits():
   i=0
   k=0
 
+  # Flash the heartbeat LED
+  blink_heartbeat()
+  # Now add up the input bits
   for switch in keySwitches:
     k *= 2
     if not switch.value:
@@ -535,108 +568,137 @@ def accentedWrite(x):
   sendUtfChar(utfArray[a+4*vidx])
   return
 
-print("QuirkeyV01 setup ...")
-setup()
-print("Starting Quirkey Main Loop")
+#################################################################################
+# Where the magic happens...
+def main_loop():
+  global shifted
+  global numericed
+  global controlled
+  global alted
+  global altgred
+  global extraed
+  global funced
+  global accented
 
-while True:
-  x = keyWaitRepeat()
+  # Before we leap into action, wait for every key to be released.
+  if keyBits() != 0:
+    print("Wait for all keys to release...");
+    while keyBits() != 0:
+      time.sleep(0.001)
+    print("Keys released, continuing.")
 
-  if x < 32 :
-    # Here a chord has been pressed without the command key
-    if numericed != 0:
-        tokenisedWrite(numericTable[x - 1])
-    elif extraed != 0:
-        tokenisedWrite(extraTable[x - 1])
-    elif funced != 0:
-        tokenisedWrite(funcTable[x - 1])
+  while True:
+    x = keyWaitRepeat()
+
+    if x < 32 :
+      # Here a chord has been pressed without the command key
+      if numericed != 0:
+          tokenisedWrite(numericTable[x - 1])
+      elif extraed != 0:
+          tokenisedWrite(extraTable[x - 1])
+      elif funced != 0:
+          tokenisedWrite(funcTable[x - 1])
+      else:
+          if accented > 0:
+            accentedWrite(alphaTable[x - 1])
+          else:
+            tokenisedWrite(alphaTable[x-1])
+
+      # Having done whatever the chord was supposed to do, we see if any temporary
+      # keyboard shifts need to be cleared
+      if shifted == 1: # Clear a single shift.
+        shifted = 0
+        keyboard.release(Keycode.LEFT_SHIFT)
+
+      if controlled == 1: # Clear a single control shift.
+        controlled = 0
+        keyboard.release(Keycode.LEFT_CONTROL)
+
+      if alted == 1: # Clear a single alt shift.
+        alted = 0
+        keyboard.release(Keycode.LEFT_ALT)
+
+      if altgred == 1: # Clear a single alt shift.
+        altgred = 0
+        keyboard.release(Keycode.RIGHT_ALT)
+
+      if accented == 1: # Clear a single alt shift.
+        accented = 0
+
+      # Clear any internal temporary numeric, extra and func shifts
+      numericed &= 2
+      extraed &= 2
+      funced &= 2
+      accented &= 2
+
     else:
-        if accented > 0:
-          accentedWrite(alphaTable[x - 1])
-        else:
-          tokenisedWrite(alphaTable[x-1])
+      # Must be a shift function then
+      x = shiftTable[x - 32]
+      if x < 256:
+        # This was a keycode to press and release
+        tokenisedWrite(x)
+      else:
+        # Its a more complicated keypress requiring a function.
+        if x == KEYS_SHIFT_ON:
+            shifted += 1
+            if shifted > 2:
+              shifted = 2
+            keyboard.press(Keycode.LEFT_SHIFT)
 
-    # Having done whatever the chord was supposed to do, we see if any temporary
-    # keyboard shifts need to be cleared
-    if shifted == 1: # Clear a single shift.
-      shifted = 0
-      keyboard.release(Keycode.LEFT_SHIFT)
+        elif x == KEYS_CONTROL_SHIFT:
+            controlled += 1
+            if controlled > 2:
+              controlled = 2
+            keyboard.press(Keycode.LEFT_CONTROL)
 
-    if controlled == 1: # Clear a single control shift.
-      controlled = 0
-      keyboard.release(Keycode.LEFT_CONTROL)
+        elif x == KEYS_SHIFT_OFF:
+            everythingOff()
 
-    if alted == 1: # Clear a single alt shift.
-      alted = 0
-      keyboard.release(Keycode.LEFT_ALT)
+        elif x == KEYS_NUMERIC_SHIFT:
+              numericed += 1
+              if numericed > 2:
+                  numericed = 2;
 
-    if altgred == 1: # Clear a single alt shift.
-      altgred = 0
-      keyboard.release(Keycode.RIGHT_ALT)
+        elif x == KEYS_EXTRA_SHIFT:
+            extraed += 1
+            if extraed > 2:
+              extraed = 2;
 
-    if accented == 1: # Clear a single alt shift.
-      accented = 0
+        elif x == KEYS_ALT_SHIFT:
+            alted += 1
+            if alted > 2:
+              alted = 2
+            keyboard.press(Keycode.LEFT_ALT)
 
-    # Clear any internal temporary numeric, extra and func shifts
-    numericed &= 2
-    extraed &= 2
-    funced &= 2
-    accented &= 2
+        elif x == KEYS_ALTGR_SHIFT:
+            altgred += 1
+            if altgred > 2:
+              altgred = 2
+            keyboard.press(Keycode.RIGHT_ALT)
 
-  else:
-    # Must be a shift function then
-    x = shiftTable[x - 32]
-    if x < 256:
-      # This was a keycode to press and release
-      tokenisedWrite(x)
-    else:
-      # Its a more complicated keypress requiring a function.
-      if x == KEYS_SHIFT_ON:
-          shifted += 1
-          if shifted > 2:
-            shifted = 2
-          keyboard.press(Keycode.LEFT_SHIFT)
+        elif x == KEYS_FUNC_SHIFT:
+            funced += 1
+            if funced > 2:
+              funced = 2
 
-      elif x == KEYS_CONTROL_SHIFT:
-          controlled += 1
-          if controlled > 2:
-            controlled = 2
-          keyboard.press(Keycode.LEFT_CONTROL)
+        elif x == KEYS_LANGAUGE_SHIFT:
+          accented += 1
+          if accented > 2:
+            accented = 2
 
-      elif x == KEYS_SHIFT_OFF:
-          everythingOff()
+        elif x == KEYS_MOUSE_MODE_ON:
+            mouseMode()
 
-      elif x == KEYS_NUMERIC_SHIFT:
-            numericed += 1
-            if numericed > 2:
-                numericed = 2;
 
-      elif x == KEYS_EXTRA_SHIFT:
-          extraed += 1
-          if extraed > 2:
-            extraed = 2;
+#################################################################################
+# We call the setup and main code in here, so we can check if anything crashes
+# and issue a reset.
 
-      elif x == KEYS_ALT_SHIFT:
-          alted += 1
-          if alted > 2:
-            alted = 2
-          keyboard.press(Keycode.LEFT_ALT)
-
-      elif x == KEYS_ALTGR_SHIFT:
-          altgred += 1
-          if altgred > 2:
-            altgred = 2
-          keyboard.press(Keycode.RIGHT_ALT)
-
-      elif x == KEYS_FUNC_SHIFT:
-          funced += 1
-          if funced > 2:
-            funced = 2
-
-      elif x == KEYS_LANGAUGE_SHIFT:
-        accented += 1
-        if accented > 2:
-          accented = 2
-
-      elif x == KEYS_MOUSE_MODE_ON:
-          mouseMode()
+try:
+  print("\nInitialising ...")
+  setup()
+  print("Starting Quirkey v1.0 Main Loop")
+  main_loop()
+except Exception as e:
+  traceback.print_exception(e)
+  microcontroller.reset()
