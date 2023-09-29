@@ -31,7 +31,8 @@
 # Now has repeating keys
 # Added a heartbeat indicator LED driver, mostly for debugging
 # Wrapped the main code in a 'try' and reboot if, say, the USB goes wrong.
-
+# Added left-hand optimisation. If you're a leftie, set this to "True".
+LEFT_HANDED=False
 # Which system are we using?
 # Valid types are 'linux', 'windows', and 'mac'.
 # Need to update Windows to use hex digit entry, ana
@@ -81,20 +82,43 @@ KEYS_LANGAUGE_SHIFT=KEYS_TOKEN+9  # Currently Pinyin accenting
 HEARTBEAT_PIN=board.GP17
 heartbeat_count=0
 
+# Assign keys that are highly sensitive to mental confusion for left/right use
+if LEFT_HANDED:
+  AMBI_KEY_B=Keycode.D
+  AMBI_KEY_D=Keycode.B
+  AMBI_KEY_LEFT_PAREN=Keycode.ZERO+SHIFT_TOKEN;
+  AMBI_KEY_RIGHT_PAREN=Keycode.NINE+SHIFT_TOKEN;
+  AMBI_KEY_LEFT_BRACKET=Keycode.RIGHT_BRACKET
+  AMBI_KEY_RIGHT_BRACKET=Keycode.LEFT_BRACKET
+  # Mouse direction key bitmasks
+  AMBI_MOUSE_LEFT=16
+  AMBI_MOUSE_RIGHT=2
+else:
+  # Right hand versions
+  AMBI_KEY_B=Keycode.B
+  AMBI_KEY_D=Keycode.D
+  AMBI_KEY_LEFT_PAREN=Keycode.NINE+SHIFT_TOKEN;
+  AMBI_KEY_RIGHT_PAREN=Keycode.ZERO+SHIFT_TOKEN;
+  AMBI_KEY_LEFT_BRACKET=Keycode.LEFT_BRACKET
+  AMBI_KEY_RIGHT_BRACKET=Keycode.RIGHT_BRACKET
+  # Mouse direction key bitmasks
+  AMBI_MOUSE_LEFT=2
+  AMBI_MOUSE_RIGHT=16
+
 # Ctrl, pinkie, ring, middle, 1st, thumb pins.
 # Activating a switch grounds the respective pin.
 keyPorts=[board.GP8,board.GP7,board.GP6,board.GP5,board.GP4,board.GP9]
 # This will hold the switch objects once the key pins have been initialised.
 keySwitches=[]
-alphaTable=[Keycode.SPACE,Keycode.E,Keycode.I,Keycode.O,Keycode.C,Keycode.A,Keycode.D,Keycode.S,
+alphaTable=[Keycode.SPACE,Keycode.E,Keycode.I,Keycode.O,Keycode.C,Keycode.A,AMBI_KEY_D,Keycode.S,
 						Keycode.K,Keycode.T,Keycode.R,Keycode.N,Keycode.Y,Keycode.PERIOD,Keycode.F,
 						Keycode.U,Keycode.H,Keycode.V,Keycode.L,Keycode.Q,Keycode.Z,Keycode.MINUS,
-						Keycode.QUOTE,Keycode.G,Keycode.J,Keycode.COMMA,Keycode.W,Keycode.B,
+						Keycode.QUOTE,Keycode.G,Keycode.J,Keycode.COMMA,Keycode.W,AMBI_KEY_B,
 						Keycode.X,Keycode.M,Keycode.P]
 
 # Characters avaiable when internal numeric shift (Ctrl-N) is down
 							# SPACE 120(
-numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,Keycode.NINE+SHIFT_TOKEN,
+numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,AMBI_KEY_LEFT_PAREN,
                 # *3$/
                 Keycode.EIGHT+SHIFT_TOKEN,Keycode.THREE,Keycode.FOUR+SHIFT_TOKEN,Keycode.FORWARD_SLASH,
                 # +;
@@ -104,7 +128,7 @@ numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,Keycode.NINE+SH
                 # 46-&
                 Keycode.FOUR,Keycode.SIX,Keycode.MINUS,Keycode.SEVEN+SHIFT_TOKEN,
                 # #)%
-                Keycode.THREE+SHIFT_TOKEN,Keycode.ZERO+SHIFT_TOKEN,Keycode.FIVE+SHIFT_TOKEN,
+                Keycode.THREE+SHIFT_TOKEN,AMBI_KEY_RIGHT_PAREN,Keycode.FIVE+SHIFT_TOKEN,
                 # !@7=
                 Keycode.ONE+SHIFT_TOKEN,Keycode.TWO+SHIFT_TOKEN,Keycode.SEVEN,Keycode.EQUALS,
                 # ,:8x
@@ -113,10 +137,10 @@ numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,Keycode.NINE+SH
                 Keycode.NINE,Keycode.FIVE]
 
 # Key codes used when Extra shift (Ctrl-H) is down
-extraTable=[0, Keycode.ESCAPE, 0, 0, Keycode.LEFT_BRACKET, 0, Keycode.DELETE, 0,
+extraTable=[0, Keycode.ESCAPE, 0, 0, AMBI_KEY_LEFT_BRACKET, 0, Keycode.DELETE, 0,
            # k
            Keycode.HOME, 0 ,0, Keycode.BACKSLASH, 0, 0, Keycode.END, 0,
-           0, 0, 0, Keycode.RIGHT_BRACKET, Keycode.PAGE_DOWN, 0, 0, 0,
+           0, 0, 0, AMBI_KEY_RIGHT_BRACKET, Keycode.PAGE_DOWN, 0, 0, 0,
            Keycode.PAGE_UP, 0, 0, 0, 0, 0, 0]
 
 # Keycodes used when Function shift (Ctrl-V) is down
@@ -493,11 +517,11 @@ def mouseMode():
         # Mouse stopped moving.
         mouseTicks = 0
 
-    if (k & 2) != 0:
+    if (k & AMBI_MOUSE_LEFT) != 0:
       # Mouse left
       x = -mouseMove
 
-    if (k & 16) != 0:
+    if (k & AMBI_MOUSE_RIGHT) != 0:
       # Mouse right
       x = mouseMove
 
@@ -702,3 +726,4 @@ try:
 except Exception as e:
   traceback.print_exception(e)
   microcontroller.reset()
+
