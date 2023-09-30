@@ -8,6 +8,10 @@ There is now a version of The Beginner's Guide in the Documentation folder. Not 
 
 Assembly and programming details are there, together with 'Cheat Sheets" for the keystrokes in mnemonic form. There is also a list of currently supported characters and key functions.
 
+## Left Handers
+
+Changing the LEFT_HANDED flag to "True" lips the most mentally confusing characters like B, D and the brackets, as well as the mouse directions. New mnemonics will follow.
+
 ## Typing Tutor
 
 A simple "typing tutor" application is included in TutorApp. Just copy these files into a directory and run TutorApp.py according to the Python operating instructions of your platform (a copy of John Zelle's simple portable graphics utility is included for convenience, should you not have it already installed).
