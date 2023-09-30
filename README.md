@@ -10,7 +10,7 @@ Assembly and programming details are there, together with 'Cheat Sheets" for the
 
 ## Left Handers
 
-Changing the LEFT_HANDED flag to "True" lips the most mentally confusing characters like B, D and the brackets, as well as the mouse directions. New mnemonics will follow.
+Changing the LEFT_HANDED flag to "True" flips the most mentally confusing characters like B, D and the brackets, as well as the mouse directions. New mnemonics will follow.
 
 ## Typing Tutor
 
