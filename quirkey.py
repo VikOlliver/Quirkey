@@ -86,10 +86,12 @@ heartbeat_count=0
 if LEFT_HANDED:
   AMBI_KEY_B=Keycode.D
   AMBI_KEY_D=Keycode.B
-  AMBI_KEY_LEFT_PAREN=Keycode.ZERO+SHIFT_TOKEN;
-  AMBI_KEY_RIGHT_PAREN=Keycode.NINE+SHIFT_TOKEN;
+  AMBI_KEY_LEFT_PAREN=Keycode.ZERO+SHIFT_TOKEN
+  AMBI_KEY_RIGHT_PAREN=Keycode.NINE+SHIFT_TOKEN
   AMBI_KEY_LEFT_BRACKET=Keycode.RIGHT_BRACKET
   AMBI_KEY_RIGHT_BRACKET=Keycode.LEFT_BRACKET
+  AMBI_FORWARD_SLASH=Keycode.BACKSLASH
+  AMBI_BACKSLASH=Keycode.FORWARD_SLASH
   # Mouse direction key bitmasks
   AMBI_MOUSE_LEFT=16
   AMBI_MOUSE_RIGHT=2
@@ -97,10 +99,12 @@ else:
   # Right hand versions
   AMBI_KEY_B=Keycode.B
   AMBI_KEY_D=Keycode.D
-  AMBI_KEY_LEFT_PAREN=Keycode.NINE+SHIFT_TOKEN;
-  AMBI_KEY_RIGHT_PAREN=Keycode.ZERO+SHIFT_TOKEN;
+  AMBI_KEY_LEFT_PAREN=Keycode.NINE+SHIFT_TOKEN
+  AMBI_KEY_RIGHT_PAREN=Keycode.ZERO+SHIFT_TOKEN
   AMBI_KEY_LEFT_BRACKET=Keycode.LEFT_BRACKET
   AMBI_KEY_RIGHT_BRACKET=Keycode.RIGHT_BRACKET
+  AMBI_FORWARD_SLASH=Keycode.FORWARD_SLASH
+  AMBI_BACKSLASH=Keycode.BACKSLASH
   # Mouse direction key bitmasks
   AMBI_MOUSE_LEFT=2
   AMBI_MOUSE_RIGHT=16
@@ -120,7 +124,7 @@ alphaTable=[Keycode.SPACE,Keycode.E,Keycode.I,Keycode.O,Keycode.C,Keycode.A,AMBI
 							# SPACE 120(
 numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,AMBI_KEY_LEFT_PAREN,
                 # *3$/
-                Keycode.EIGHT+SHIFT_TOKEN,Keycode.THREE,Keycode.FOUR+SHIFT_TOKEN,Keycode.FORWARD_SLASH,
+                Keycode.EIGHT+SHIFT_TOKEN,Keycode.THREE,Keycode.FOUR+SHIFT_TOKEN,AMBI_FORWARD_SLASH,
                 # +;
                 Keycode.EQUALS+SHIFT_TOKEN,Keycode.SEMICOLON,
                 # "?.
@@ -139,7 +143,7 @@ numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,AMBI_KEY_LEFT_P
 # Key codes used when Extra shift (Ctrl-H) is down
 extraTable=[0, Keycode.ESCAPE, 0, 0, AMBI_KEY_LEFT_BRACKET, 0, Keycode.DELETE, 0,
            # k
-           Keycode.HOME, 0 ,0, Keycode.BACKSLASH, 0, 0, Keycode.END, 0,
+           Keycode.HOME, 0 ,0, AMBI_BACKSLASH, 0, 0, Keycode.END, 0,
            0, 0, 0, AMBI_KEY_RIGHT_BRACKET, Keycode.PAGE_DOWN, 0, 0, 0,
            Keycode.PAGE_UP, 0, 0, 0, 0, 0, 0]
 
