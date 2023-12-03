@@ -56,7 +56,7 @@ NUM_KEYS=6
 # Delay in 10ms increments before repeat starts
 REPEAT_START_DELAY = 220
 # Delay in 10ms increments between repeated characters
-REPEAT_INTERVAL_DELAY = 8
+REPEAT_INTERVAL_DELAY = 4
 # After moving this number of ticks, the mouse will accelerate
 MOUSE_ACCELERATION_POINT = 40
 # Maximum speedup on mouse
@@ -145,7 +145,7 @@ extraTable=[0, Keycode.ESCAPE, 0, 0, AMBI_KEY_LEFT_BRACKET, 0, Keycode.DELETE, 0
            # k
            Keycode.HOME, 0 ,0, AMBI_BACKSLASH, 0, 0, Keycode.END, 0,
            0, 0, 0, AMBI_KEY_RIGHT_BRACKET, Keycode.PAGE_DOWN, 0, 0, 0,
-           Keycode.PAGE_UP, 0, 0, 0, 0, 0, 0]
+           Keycode.PAGE_UP, 0, Keycode.WINDOWS, 0, 0, 0, 0]
 
 # Keycodes used when Function shift (Ctrl-V) is down
 funcTable=[0, Keycode.F1, Keycode.F2, Keycode.F10, 0, Keycode.F11, Keycode.F3, 0,
