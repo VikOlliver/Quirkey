@@ -20,7 +20,7 @@ A simple "typing tutor" application is included in TutorApp. Just copy these fil
 
 The Microwriter and Quinkey were 6-key chord keyboards created in the 80's for use by people with various physical limitations such as brittle bones. They developed a following among all types of users being simple, reliable, easy to use, and effectively allowed instant touch typing at speed. See https://en.wikipedia.org/wiki/Microwriter
 
-3D Files for printing the chord keyboard shell and assembly instructions can be found at https://www.thingiverse.com/thing:3433244 and https://github.com/VikOlliver/Quirkey_3D
+3D Files for printing the chord keyboard shell and assembly instructions can be found at https://www.printables.com/model/667870-quirkey-v3-accessibility-keyboard-for-one-handed-u and https://github.com/VikOlliver/Quirkey_3D
 
 An Arduino version for AT32U4 processors is also available at https://github.com/VikOlliver/Microwriter.
 
