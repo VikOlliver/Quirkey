@@ -1,12 +1,16 @@
 # Quirkey
 
-CircuitPython code for the Pi Pico version of the Quirkey keyboard, based heavily on the work done by Microwriter. The device emulates a USB HID US keyboard and requires no specific driver. It does however need the Adafruit HID CircuitPython libraries which can be downloaded from Adafruit's HID example web page or from Github. Once you have installed this on your Pi Pico, just copy the quirkey.py program into the CIRCUITPY device and rename it to code.py - if you have not done this before, it is the standard installation procedure that you will find in the CircuitPython tutorial pages.
+CircuitPython code for the Pi Pico version of the Quirkey keyboard, based heavily on the work done by Microwriter. The device emulates a USB HID US keyboard and mouse, and requires no specific driver. It does however need the Adafruit HID CircuitPython libraries which can be downloaded from Adafruit's HID example web page or from Github. Once you have installed this on your Pi Pico, just copy the quirkey.py program into the CIRCUITPY device and rename it to code.py - if you have not done this before, it is the standard installation procedure that you will find in the CircuitPython tutorial pages.
 
 ## Documentation
 
 There is now a version of The Beginner's Guide in the Documentation folder. Not exactly completed, but it'll get you up and running. Source document will be provided when I don't feel embarrassed about it, but for now it is in PDF format.
 
 Assembly and programming details are there, together with 'Cheat Sheets" for the keystrokes in mnemonic form. There is also a list of currently supported characters and key functions.
+
+## 3D Printable Files And Build
+
+Location of the files to 3D print the Quirkey (left hand, right hand, scaleable) are listed at the end. No special materials or supports needed. Other than requiring soldering a dozen or so wires to complete, it's a pretty easy build.
 
 ## Left Handers
 
