@@ -6,11 +6,13 @@ CircuitPython code for the Pi Pico version of the Quirkey keyboard, based heavil
 
 There is now a version of The Beginner's Guide in the Documentation folder. Not exactly completed, but it'll get you up and running. Source document will be provided when I don't feel embarrassed about it, but for now it is in PDF format.
 
+Note: For historical reasons, the V3 (microswitch version) assembly instructions and STL files have been left in the Documentation directory. The V4 (keyboard switch) version is located at https://www.printables.com/model/704535. The source files for all of this are in the Quirkey_3D repository on this account.
+
 Assembly and programming details are there, together with 'Cheat Sheets" for the keystrokes in mnemonic form. There is also a list of currently supported characters and key functions.
 
 ## 3D Printable Files And Build
 
-Location of the files to 3D print the Quirkey (left hand, right hand, scaleable) are listed at the end. No special materials or supports needed. Other than requiring soldering a dozen or so wires to complete, it's a pretty easy build.
+Location of the files to 3D print the Quirkey (left hand, right hand, scaleable) are listed at the end. No special materials or supports needed. Other than requiring soldering a dozen or so wires to complete, it's a pretty easy build. The user-ready STL files and assembly doccumentation are here: https://www.printables.com/model/704535
 
 ## Left Handers
 
