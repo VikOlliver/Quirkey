@@ -37,7 +37,7 @@ LEFT_HANDED=False
 # Valid types are 'linux', 'windows', and 'mac'.
 # Need to update Windows to use hex digit entry, ana
 # support similar system for Mac.
-systemType='linux'
+systemType='windows'
 
 import time
 import board
@@ -162,8 +162,10 @@ extraTable=[0, Keycode.ESCAPE, 0, 0, AMBI_KEY_LEFT_BRACKET, 0, Keycode.DELETE, 0
 
 # Keycodes used when Function shift (Ctrl-V) is down
 funcTable=[0, Keycode.F1, Keycode.F2, Keycode.F10, 0, Keycode.F11, Keycode.F3, 0,
-          0, 0, 0, 0, 0, Keycode.F12, Keycode.F4, Keycode.F6,
-          0, 0, 0, 0, 0, 0, 0, Keycode.F7,
+          # UTF tokens here are for n-tilde and N-tilde
+          0, 0, 0, UTF_TOKEN+0xf1, UTF_TOKEN+0xd1, Keycode.F12, Keycode.F4, Keycode.F6,
+          # UTF tokens for inverted query and inverted exclaimation
+          0, 0, 0, UTF_TOKEN+0xbf, 0, UTF_TOKEN+0xa1, 0, Keycode.F7,
           0, 0, 0, Keycode.F8, 0, Keycode.F9, Keycode.F5]
 
 # Key shift internal tokens and some editing keycodes used when shift is down
@@ -325,15 +327,15 @@ def sendUtfCharWindows(utfChar):
 
 	# UTF starts with left ALT held down
     keyboard.press(Keycode.LEFT_ALT)
-    keyboard.press(Keycode.KEYPAD_PLUS)
-    keyboard.release(Keycode.KEYPAD_PLUS)
 
     # Build a list of the keypad digit keys
     digitKeys = []
     while utfChar > 0:
-        digitKeys.insert(0,keypadDigits[int(utfChar % 10)])
-        utfChar = int(utfChar / 10)
-    # Send 'em to the HID keyboard one at a time
+      digitKeys.insert(0,keypadDigits[int(utfChar % 10)])
+      utfChar = int(utfChar / 10)
+    # Send 'em to the HID keyboard one at a time, always starting with zero
+    keyboard.press(keypadDigits[0])
+    keyboard.release(keypadDigits[0])
     for k in digitKeys:
       keyboard.press(k)
       keyboard.release(k)
@@ -602,7 +604,7 @@ def accentedWrite(x):
   # First check for shift, which capitalises the accented char and moves up the table
   vidx = vowels.index(x)
   if shifted > 0:
-    vidx += 24
+    vidx += 6
 
   print("vidx=",vidx)
   # Calculate the position of the accented character
@@ -738,7 +740,7 @@ def main_loop():
 try:
   print("\nInitialising ...")
   setup()
-  print("Starting Quirkey v1.01 Main Loop")
+  print("Starting Quirkey v1.02 Main Loop")
   main_loop()
 except Exception as e:
   traceback.print_exception(e)
