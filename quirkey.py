@@ -37,7 +37,7 @@ LEFT_HANDED=False
 # Valid types are 'linux', 'windows', and 'mac'.
 # Need to update Windows to use hex digit entry, ana
 # support similar system for Mac.
-systemType='windows'
+systemType='linux'
 
 import time
 import board
@@ -78,10 +78,6 @@ KEYS_FUNC_SHIFT=KEYS_TOKEN+7
 KEYS_ALTGR_SHIFT=KEYS_TOKEN+8
 KEYS_LANGAUGE_SHIFT=KEYS_TOKEN+9  # Currently Pinyin accenting
 
-# Variables used to produce a heartbeat LED. If you don't want one, define HEARTBEAT_PIN as 0
-HEARTBEAT_PIN=board.GP17
-heartbeat_count=0
-
 # Assign keys that are highly sensitive to mental confusion for left/right use
 if LEFT_HANDED:
   AMBI_KEY_B=Keycode.D
@@ -109,9 +105,26 @@ else:
   AMBI_MOUSE_LEFT=2
   AMBI_MOUSE_RIGHT=16
 
-# Ctrl, pinkie, ring, middle, 1st, thumb pins.
+# Variables used to produce a heartbeat LED.
+# If you don't want one, define HEARTBEAT_PIN as 0 *AFTER THE keyPorts*
+HEARTBEAT_PIN=0
+heartbeat_count=0
+
 # Activating a switch grounds the respective pin.
-keyPorts=[board.GP8,board.GP7,board.GP6,board.GP5,board.GP4,board.GP9]
+# If we're ona Seeed XIAO board, we need to change that because they label the pins funny
+keyPorts=[]
+if ( board.board_id == "seeeduino_xiao_rp2040"):
+  print(" Seeed XIAO detected. Changing pin config.")
+  # Ctrl, pinkie, ring, middle, 1st, thumb pins.
+  keyPorts=[board.D8,board.D7,board.D6,board.D5,board.D4,board.D9]
+  HEARTBEAT_PIN=board.LED
+else:
+  # Ctrl, pinkie, ring, middle, 1st, thumb pins.
+  keyPorts=[board.GP8,board.GP7,board.GP6,board.GP5,board.GP4,board.GP9]
+  HEARTBEAT_PIN=board.GP17
+
+# Set HEARTBEAT_PIN to 0 here if you don't want a heartbeat light
+
 # This will hold the switch objects once the key pins have been initialised.
 keySwitches=[]
 alphaTable=[Keycode.SPACE,Keycode.E,Keycode.I,Keycode.O,Keycode.C,Keycode.A,AMBI_KEY_D,Keycode.S,
@@ -725,7 +738,7 @@ def main_loop():
 try:
   print("\nInitialising ...")
   setup()
-  print("Starting Quirkey v1.0 Main Loop")
+  print("Starting Quirkey v1.01 Main Loop")
   main_loop()
 except Exception as e:
   traceback.print_exception(e)
