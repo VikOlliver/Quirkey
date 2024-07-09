@@ -1,5 +1,6 @@
 # quirkey.py
-# Microwriter reboot on Arduino for the Quirkey Keyboard (c)2023 vik@diamondage.co.nz
+# Microwriter reboot on CircuitPython for the Quirkey Keyboard, configured
+# for Pico and Seeed XIAO RP2040 (c)2023 vik@diamondage.co.nz
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -17,7 +18,7 @@
 #
 #
 # Uses key tables loosely borrowed from the Microwriter https://en.wikipedia.org/wiki/Microwriter
-# Designed to run on CircuitPython. An Arduino version of AT32U4 "Microwriter" is available on github
+# which is the Arduino version of this code for the AT32U4, also available on this github repo
 # HID Example code: https://learn.adafruit.com/adafruit-pyruler/circuitpython-hid-keyboard-and-mouse
 # API https://docs.circuitpython.org/projects/hid/en/latest/api.html
 #
