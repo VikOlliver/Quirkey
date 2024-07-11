@@ -324,7 +324,7 @@ def sendUtfCharLinux(utfChar):
 # to send it to the HID keyboard channel.
 # Windows uses ALT NUMERIC_PLUS <decimal value using keypad> release ALT
 def sendUtfCharWindows(utfChar):
-    print("Send Windows UTF char",utfChar)
+    #print("Send Windows UTF char",utfChar)
 
 	# UTF starts with left ALT held down
     keyboard.press(Keycode.LEFT_ALT)
@@ -598,7 +598,6 @@ def accentedWrite(x):
   a = acntKeys.index(p)
 
 
-  print("p=",p, "a=",a)
   # We have the key code for characer x and accent a upon it.
   # There are 4 accents per char in pinyin.
   # Index the UTF code and send it.
@@ -607,7 +606,6 @@ def accentedWrite(x):
   if shifted > 0:
     vidx += 6
 
-  print("vidx=",vidx)
   # Calculate the position of the accented character
   sendUtfChar(utfArray[a+4*vidx])
   return
