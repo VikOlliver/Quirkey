@@ -6,8 +6,8 @@ import board, digitalio
 # https://learn.adafruit.com/customizing-usb-devices-in-circuitpython/circuitpy-midi-serial#circuitpy-mass-storage-device-3096583-4
 button = 0
 if ( board.board_id == "seeeduino_xiao_rp2040"):
-  print("boot: Seediuno XIAO detected. Checking D1 ...")
-  button = digitalio.DigitalInOut(board.D1)
+  print("boot: Seediuno XIAO detected. Checking D7 ...")
+  button = digitalio.DigitalInOut(board.D7)
 else:
   button=digitalio.DigitalInOut(board.GP7)
 
