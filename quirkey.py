@@ -194,7 +194,8 @@ U	Ū	&#x16A;	Ú	&#xDA;	Ǔ	&#x1D3;	Ù	&#xD9;
 Ü	Ǖ	&#x1D5;	Ǘ	&#x1D7;	Ǚ	&#x1D9;	Ǜ	&#x1DB;
 '''
 # Characters that pinyin recognised as vowels that can have accents
-vowels=[Keycode.A,Keycode.E,Keycode.I,Keycode.O,Keycode.U]
+# The V key is used for u umlaut, as V is not used in pinyin
+vowels=[Keycode.A,Keycode.E,Keycode.I,Keycode.O,Keycode.U,Keycode.V]
 # Key bit chords that pinyin uses to apply accents as tones 1-4 (space indicates no accent)
 acntKeys=[2,4,8,16];
 
@@ -592,7 +593,17 @@ def accentedWrite(x):
   p = keyWait()
   # if no matching accent character is available, return unaccented char.
   if not p in acntKeys:
-    tokenisedWrite(x)
+    # Special case is the V key, which is repurposed in pinyin to the U umlaut
+    if (x == Keycode.V):
+      # U umlaut may be capitalised
+      if (shifted==0):
+        # Not shifted, lower case
+        sendUtfChar(0xfc)
+      else:
+        # Shifted, upper case
+        sendUtfChar(0xdc)
+    else:
+      tokenisedWrite(x)
     return
 
   a = acntKeys.index(p)
@@ -739,7 +750,7 @@ def main_loop():
 try:
   print("\nInitialising ...")
   setup()
-  print("Starting Quirkey v1.02 Main Loop")
+  print("Starting Quirkey v1.03 Main Loop")
   main_loop()
 except Exception as e:
   traceback.print_exception(e)
