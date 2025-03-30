@@ -12,7 +12,7 @@ Assembly and programming details are there, together with 'Cheat Sheets" for the
 
 ## 3D Printable Files And Build
 
-Location of the files to 3D print the Quirkey (left hand, right hand, scaleable) are listed at the end. No special materials or supports needed. Other than requiring soldering a dozen or so wires to complete, it's a pretty easy build. The user-ready STL files and assembly doccumentation are here: https://www.printables.com/model/704535
+Location of the files to 3D print the Quirkey (left hand, right hand, scalable) are listed at the end. No special materials or supports needed. Other than requiring soldering a dozen or so wires to complete, it's a pretty easy build. The user-ready STL files and assembly documentation are here: https://www.printables.com/model/704535
 
 ## Left Handers
 
