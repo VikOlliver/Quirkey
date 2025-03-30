@@ -134,7 +134,7 @@ alphaTable=[Keycode.SPACE,Keycode.E,Keycode.I,Keycode.O,Keycode.C,Keycode.A,AMBI
 						Keycode.QUOTE,Keycode.G,Keycode.J,Keycode.COMMA,Keycode.W,AMBI_KEY_B,
 						Keycode.X,Keycode.M,Keycode.P]
 
-# Characters avaiable when internal numeric shift (Ctrl-N) is down
+# Characters available when internal numeric shift (Ctrl-N) is down
 							# SPACE 120(
 numericTable=[Keycode.SPACE,Keycode.ONE,Keycode.TWO,Keycode.ZERO,AMBI_KEY_LEFT_PAREN,
                 # *3$/
@@ -165,7 +165,7 @@ extraTable=[0, Keycode.ESCAPE, 0, 0, AMBI_KEY_LEFT_BRACKET, 0, Keycode.DELETE, 0
 funcTable=[0, Keycode.F1, Keycode.F2, Keycode.F10, 0, Keycode.F11, Keycode.F3, 0,
           # UTF tokens here are for n-tilde and N-tilde
           0, 0, 0, UTF_TOKEN+0xf1, UTF_TOKEN+0xd1, Keycode.F12, Keycode.F4, Keycode.F6,
-          # UTF tokens for inverted query and inverted exclaimation
+          # UTF tokens for inverted query and inverted exclamation
           0, 0, 0, UTF_TOKEN+0xbf, 0, UTF_TOKEN+0xa1, 0, Keycode.F7,
           0, 0, 0, Keycode.F8, 0, Keycode.F9, Keycode.F5]
 
@@ -236,14 +236,14 @@ global keyboardLayout
 repeatingChord = 0
 
 # >0 when shift is on.
-shifted=0 # has a real keyboard key counterpoart
+shifted=0 # has a real keyboard key counterpart
 # >0 when using numeric table
 numericed=0
-# >0 when CTRL is on - has a real keyboard key counterpoart
+# >0 when CTRL is on - has a real keyboard key counterpart
 controlled=0
-# >0 when ALT is on - has a real keyboard key counterpoart
+# >0 when ALT is on - has a real keyboard key counterpart
 alted=0
-# >0 when ALTGR is on - has a real keyboard key counterpoart
+# >0 when ALTGR is on - has a real keyboard key counterpart
 altgred=0
 # >0 When extra shift on
 extraed=0
@@ -276,7 +276,7 @@ def setup():
     button.pull = digitalio.Pull.UP
     keySwitches.append(button)
 
-  # If we're using a hearbeat LED, enable that output
+  # If we're using a heartbeat LED, enable that output
   if HEARTBEAT_PIN != 0:
     print("Starting heartbeat LED")
     heartbeat_output = digitalio.DigitalInOut(HEARTBEAT_PIN)
@@ -401,7 +401,7 @@ def getRepeatingChord():
 #################################################################################
 # Wait (with debounce) until some keys have been pressed.
 # If all keys are released with in repeat time, return the chord.
-# If held beyone repeat time, enter repeat mode and return it.
+# If held beyond repeat time, enter repeat mode and return it.
 def keyWaitRepeat():
   x = 0
   k = 0
@@ -484,7 +484,7 @@ def everythingOff():
 
 #################################################################################
 # Check the character X to see if it has any modifier key flags. If necessary
-# temporarity press any modifier keys, but if the modifer state is already locked
+# temporarity press any modifier keys, but if the modifier state is already locked
 # (shifted,alted etc.) do not change the modifier key state.
 # i.e. if sending a shifted 4 ($ key) only press the shift key if shift is not
 # locked (has a vale of 2).
@@ -498,7 +498,7 @@ def tokenisedWrite(x):
     	if (shifted < 2):
         	keyboard.release(Keycode.LEFT_SHIFT)
 
-    # If the value has a UTF token bit set, send the charcter as a UTF sequence
+    # If the value has a UTF token bit set, send the character as a UTF sequence
     elif (x & UTF_TOKEN) != 0:
     	if ( systemType == 'linux' ):
             sendUtfCharLinux(x & 0xfff)
@@ -609,7 +609,7 @@ def accentedWrite(x):
   a = acntKeys.index(p)
 
 
-  # We have the key code for characer x and accent a upon it.
+  # We have the key code for character x and accent a upon it.
   # There are 4 accents per char in pinyin.
   # Index the UTF code and send it.
   # First check for shift, which capitalises the accented char and moves up the table

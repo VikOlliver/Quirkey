@@ -112,7 +112,7 @@ __version__ = "5.0"
 #     Added Pixmap object for simple image manipulation.
 # Version 3.1 4/13/05
 #     Improved the Tk thread communication so that most Tk calls
-#        do not have to wait for synchonization with the Tk thread.
+#        do not have to wait for synchronization with the Tk thread.
 #        (see _tkCall and _tkExec)
 # Version 3.0 12/30/04
 #     Implemented Tk event loop in separate thread. Should now work
@@ -157,7 +157,7 @@ __version__ = "5.0"
 
 # Version 1.4
 #     Fixed Garbage collection of Tkinter images bug.
-#     Added ability to set text atttributes.
+#     Added ability to set text attributes.
 #     Added Entry boxes.
 
 import time, os, sys
@@ -180,7 +180,7 @@ UNSUPPORTED_METHOD = "Object doesn't support operation"
 BAD_OPTION = "Illegal option value"
 
 ##########################################################################
-# global variables and funtions
+# global variables and functions
 
 _root = tk.Tk()
 _root.withdraw()
@@ -947,7 +947,7 @@ class Image(GraphicsObject):
 
     def save(self, filename):
         """Saves the pixmap image to filename.
-        The format for the save image is determined from the filname extension.
+        The format for the save image is determined from the filename extension.
 
         """
         
