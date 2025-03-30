@@ -276,7 +276,7 @@ def setup():
     button.pull = digitalio.Pull.UP
     keySwitches.append(button)
 
-  # If we're using a hearbeat LED, enable that output
+  # If we're using a heartbeat LED, enable that output
   if HEARTBEAT_PIN != 0:
     print("Starting heartbeat LED")
     heartbeat_output = digitalio.DigitalInOut(HEARTBEAT_PIN)
